@@ -301,11 +301,12 @@
         /* --- Overlays --- */
         .overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.92);
+            /* CHANGED: Reduced opacity from 0.92 to 0.30 to show background */
+            background: rgba(0,0,0,0.3); 
             display: none; flex-direction: column;
             align-items: center; justify-content: center;
             z-index: 1000; padding: 20px;
-            backdrop-filter: blur(5px);
+            backdrop-filter: blur(3px);
         }
 
         .overlay-title {
@@ -603,21 +604,65 @@
     precision mediump float;
     uniform float u_time;
     uniform vec2 u_resolution;
+    
+    // New uniforms for dynamic color shifting
+    uniform vec3 u_color_mult; // Multipliers for R, G, B wave components
+    uniform vec3 u_bg_color;   // Base background color
+
     void main() {
         vec2 uv = gl_FragCoord.xy / u_resolution.xy;
+        
+        // Original wave math
         float v1 = sin(uv.x * 5.0 + u_time * 0.5);
         float v2 = cos(uv.y * 5.0 - u_time * 0.3);
         float r = sin(uv.x * 6.0 + u_time + v1) * 0.5 + 0.5;
         float g = cos(uv.y * 7.0 - u_time + v2) * 0.5 + 0.5;
         float b = sin((uv.x + uv.y) * 8.0 + u_time) * 0.5 + 0.5;
-        vec3 color = vec3(r*0.8, g*0.2, b*0.6); // Purple/Red neon mix
-        vec3 finalColor = mix(vec3(0.05, 0.05, 0.1), color, 0.4);
+        
+        // Apply dynamic multipliers instead of hardcoded values
+        vec3 color = vec3(r * u_color_mult.x, g * u_color_mult.y, b * u_color_mult.z);
+        
+        // Mix with dynamic background color
+        vec3 finalColor = mix(u_bg_color, color, 0.4);
+        
         gl_FragColor = vec4(finalColor, 1.0);
     }
 </script>
 
 <script>
-/** --- WEBGL BACKGROUND --- */
+/** --- WEBGL BACKGROUND & STATE MANAGEMENT --- */
+
+// Global state for background transition
+const bgState = {
+    currentMult: [0.8, 0.2, 0.6], // Starts at Game default
+    targetMult: [0.8, 0.2, 0.6],
+    currentBg: [0.05, 0.05, 0.1],
+    targetBg: [0.05, 0.05, 0.1]
+};
+
+// Function to set the background mode
+const setBgMode = (mode) => {
+    if (mode === 'betting') {
+        // Shades of Green (Velvet table)
+        // R low, G high, B low-mid for richness
+        bgState.targetMult = [0.1, 0.8, 0.3]; 
+        bgState.targetBg = [0.0, 0.1, 0.02];
+    } else if (mode === 'game') {
+        // Original Neon (Purple/Red/Blue)
+        bgState.targetMult = [0.8, 0.2, 0.6];
+        bgState.targetBg = [0.05, 0.05, 0.1];
+    } else if (mode === 'gameover') {
+        // Red and Black (System Failure)
+        bgState.targetMult = [0.9, 0.0, 0.0];
+        bgState.targetBg = [0.0, 0.0, 0.0];
+    }
+};
+
+// Linear interpolation helper
+const lerp = (start, end, amt) => {
+    return (1 - amt) * start + amt * end;
+}
+
 const initBackground = () => {
     const canvas = document.getElementById("bg-canvas");
     const gl = canvas.getContext("webgl");
@@ -644,13 +689,28 @@ const initBackground = () => {
 
     const uTime = gl.getUniformLocation(program, "u_time");
     const uRes = gl.getUniformLocation(program, "u_resolution");
+    const uColorMult = gl.getUniformLocation(program, "u_color_mult");
+    const uBgColor = gl.getUniformLocation(program, "u_bg_color");
+
     const startTime = Date.now();
 
     function render() {
+        // Smoothly transition colors
+        for(let i=0; i<3; i++) {
+            bgState.currentMult[i] = lerp(bgState.currentMult[i], bgState.targetMult[i], 0.03);
+            bgState.currentBg[i] = lerp(bgState.currentBg[i], bgState.targetBg[i], 0.03);
+        }
+
         canvas.width = window.innerWidth; canvas.height = window.innerHeight;
         gl.viewport(0, 0, canvas.width, canvas.height);
+        
         gl.uniform1f(uTime, (Date.now() - startTime) * 0.001);
         gl.uniform2f(uRes, canvas.width, canvas.height);
+        
+        // Pass the interpolated colors to shader
+        gl.uniform3fv(uColorMult, bgState.currentMult);
+        gl.uniform3fv(uBgColor, bgState.currentBg);
+        
         gl.drawArrays(gl.TRIANGLES, 0, 6);
         requestAnimationFrame(render);
     }
@@ -791,6 +851,9 @@ class Game {
             return;
         }
         
+        // SET BACKGROUND TO GREEN
+        setBgMode('betting');
+
         // Reset Table
         this.dealerHand = [];
         this.playerHand = [];
@@ -879,6 +942,9 @@ class Game {
             return;
         }
         
+        // SET BACKGROUND TO GAME (Neon)
+        setBgMode('game');
+
         this.currentBet = this.tempWager;
         this.money -= this.currentBet;
         this.updateMoneyUI();
@@ -1118,6 +1184,9 @@ class Game {
     }
 
     triggerGameOver() {
+        // SET BACKGROUND TO RED/BLACK
+        setBgMode('gameover');
+
         document.getElementById('go-rounds').innerText = this.rounds;
         document.getElementById('game-over').style.display = 'flex';
     }
