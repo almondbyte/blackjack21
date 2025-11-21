@@ -671,6 +671,10 @@
 </script>
 
 <script>
+
+window.addEventListener("beforeinstallprompt", (e) => {
+    e.preventDefault(); // Stop the install prompt from appearing
+
 /** --- WEBGL BACKGROUND & STATE MANAGEMENT --- */
 
 // Global state for background transition
