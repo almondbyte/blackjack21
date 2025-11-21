@@ -1048,14 +1048,13 @@ class Game {
         this.toggleControls(true);
 
         // CHECK FOR PAIR (Split Logic)
-        const c1 = this.playerHand[0].rank;
-        const c2 = this.playerHand[1].rank;
-        // Standardize face cards for splitting (e.g. K and Q both have value 10)
-        const v1 = this.playerHand[0].getValue();
-        const v2 = this.playerHand[1].getValue();
+        const rank1 = this.playerHand[0].rank;
+        const rank2 = this.playerHand[1].rank;
 
-        // If rank matches (e.g. 8 and 8) OR both are 10-value cards (e.g. K and J), offer split
-        if (v1 === v2) {
+        // Standard Blackjack split rule: cards must have the exact same RANK.
+        // Special case: any two 10-value cards (10, J, Q, K) can be split if house allows,
+        // but the strictest rule is same RANK. We enforce same RANK here.
+        if (rank1 === rank2) {
             // Hide Double, Show Split
             document.getElementById('btn-double').style.display = 'none';
             document.getElementById('btn-split').style.display = 'block';
@@ -1195,7 +1194,9 @@ class Game {
 
             // Logic for finishing this hand (either bust or 21)
             if (score > 21) {
-                // REMOVED: this.showFloatText("BUST!", this.isSplitMode ? `#hand-${this.activeHandIndex+1}` : "#player-zone", "red");
+                // Keep the final 'BUST' popup
+                // We show this at the end of the round, not immediately on hit. 
+                // The previous change already removed the immediate 'BUST!' popup.
             } else {
                 this.showFloatText("21!", this.isSplitMode ? `#hand-${this.activeHandIndex+1}` : "#player-zone", "var(--gold)");
             }
@@ -1254,7 +1255,7 @@ class Game {
         // If all hands busted, skip dealer logic (optimization)
         let allBusted = false;
         if (this.isSplitMode) {
-            allBusted = this.splitHands.every(h => h.score > 21);
+            allBusted = this.splitHands.every(h => this.calculateScore(h.hand) > 21);
         } else {
             allBusted = this.calculateScore(this.playerHand) > 21;
         }
@@ -1310,7 +1311,7 @@ class Game {
             this.updateScores(false);
             
             if (score > 21) {
-                // REMOVED: this.showFloatText("BUST!", this.isSplitMode ? `#hand-${this.activeHandIndex+1}` : "#player-zone", "red");
+                // No immediate "BUST!" popup
                 await new Promise(r => setTimeout(r, 1000));
             }
             
@@ -1597,5 +1598,4 @@ game.openBetting();
 </script>
 </body>
 </html>
-
 
