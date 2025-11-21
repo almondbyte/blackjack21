@@ -6,9 +6,11 @@
     <title>Blackjack 21</title>
     
     <!-- PWA Settings -->
+    <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0f3460">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="icon-192.png">
 
     <style>
         :root {
@@ -301,8 +303,7 @@
         /* --- Overlays --- */
         .overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            /* CHANGED: Reduced opacity from 0.92 to 0.30 to show background */
-            background: rgba(0,0,0,0.3); 
+            background: rgba(0,0,0,0.3);
             display: none; flex-direction: column;
             align-items: center; justify-content: center;
             z-index: 1000; padding: 20px;
@@ -1295,6 +1296,13 @@ class Game {
 
 function varVal(name) {
     return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+
+// Register service worker
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js');
+    });
 }
 
 const game = new Game();
