@@ -1595,6 +1595,14 @@ const game = new Game();
 game.openBetting();
 
 </script>
+
+<script>
+// Disable PWA install prompt
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+});
+</script>
+
 </body>
 </html>
 
