@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -727,7 +727,7 @@ const RANKS = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A']
 const ITEMS = [
     { id: 'xray', name: 'X-Ray Specs', desc: 'See Dealer\'s hole card', cost: 20 },
     { id: 'sleeve_ace', name: 'Sleeve Ace', desc: 'Start with an Ace', cost: 40 },
-    { id: 'shield', name: 'Bust Shield', desc: 'Survive one bust (sets score to 20)', cost: 50 },
+    { id: 'shield', name: 'Bust Shield', desc: 'Survive one bust', cost: 50 },
     { id: 'magnet', name: 'Chip Magnet', desc: 'Blackjack pays 3:1 instead of 3:2', cost: 30 }
 ];
 
@@ -1061,9 +1061,13 @@ class Game {
         this.updateScores(true);
         await new Promise(r => setTimeout(r, 800));
 
+        const pScore = this.calculateScore(this.playerHand);
+
         while (true) {
-            const score = this.calculateScore(this.dealerHand);
-            if (score >= 17) break;
+            const dScore = this.calculateScore(this.dealerHand);
+            // Stand if 17+ (Standard) OR if dealer is already beating the player (Smart)
+            if (dScore >= 17 || dScore > pScore) break;
+            
             await this.dealCardTo(this.dealerHand);
             this.updateScores(true);
         }
@@ -1193,6 +1197,10 @@ class Game {
     }
 
     openShop() {
+        // Clear buffs from previous round so they don't stack indefinitely
+        this.activeItems = [];
+        this.renderItemsBar();
+
         const grid = document.getElementById('shop-grid');
         grid.innerHTML = '';
 
@@ -1311,5 +1319,6 @@ game.openBetting();
 </script>
 </body>
 </html>
+
 
 
