@@ -1052,8 +1052,7 @@ class Game {
         const rank2 = this.playerHand[1].rank;
 
         // Standard Blackjack split rule: cards must have the exact same RANK.
-        // Special case: any two 10-value cards (10, J, Q, K) can be split if house allows,
-        // but the strictest rule is same RANK. We enforce same RANK here.
+        //For example 10 and J cannot split but J and J can. The strictest rule is same RANK. We enforce same RANK here.
         if (rank1 === rank2) {
             // Hide Double, Show Split
             document.getElementById('btn-double').style.display = 'none';
