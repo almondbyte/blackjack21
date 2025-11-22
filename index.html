@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -768,8 +768,9 @@ const ITEMS = [
     { id: 'xray', name: 'X-Ray Specs', desc: 'See Dealer\'s hole card', cost: 20 },
     { id: 'sleeve_ace', name: 'Sleeve Ace', desc: 'Start with an Ace', cost: 40 },
     { id: 'shield', name: 'Bust Shield', desc: 'Survive one bust', cost: 50 },
-    { id: 'magnet', name: 'Chip Magnet', desc: 'Blackjack pays 3:1 instead of 3:2', cost: 30 }
+    { id: 'magnet', name: 'Chip Magnet', desc: 'Next win pays 3:1', cost: 30 }
 ];
+
 
 class Card {
     constructor(rank, suit, isHidden = false) {
@@ -1279,10 +1280,27 @@ class Game {
         await new Promise(r => setTimeout(r, 800));
 
         if (!allBusted) {
-            // Determine max player score to decide if dealer hits "smartly" or just standard 17
-            // (Keeping standard logic for now: Hit on < 17)
+            // NEW AI LOGIC: Determine the best player score to beat
+            let bestPlayerScore = 0;
+            if (this.isSplitMode) {
+                // Find max score among non-busted hands
+                this.splitHands.forEach(h => {
+                    if (h.score <= 21 && h.score > bestPlayerScore) {
+                        bestPlayerScore = h.score;
+                    }
+                });
+            } else {
+                bestPlayerScore = this.calculateScore(this.playerHand);
+            }
+
             while (true) {
                 const dScore = this.calculateScore(this.dealerHand);
+                
+                // AI Rule: If dealer is already beating the player's best score, stand immediately.
+                // This prevents the dealer from hitting on 15 when player has 12.
+                if (dScore > bestPlayerScore) break;
+
+                // Standard Rule: Dealer must stand on 17 or higher
                 if (dScore >= 17) break;
                 
                 await this.dealCardTo(this.dealerHand);
@@ -1379,12 +1397,16 @@ class Game {
     determineWinner() {
         const dScore = this.calculateScore(this.dealerHand);
         let totalWinnings = 0;
+        
+        // Magnet Logic: If active, win multiplier is 4 (3:1 payout + bet back). Normal is 2 (1:1 payout + bet back)
+        const hasMagnet = this.hasItem('magnet');
+        const winMult = hasMagnet ? 4 : 2;
 
         // Helper to calc result for one hand
         const resolveHand = (pScore, bet) => {
             if (pScore > 21) return 0; // Bust
-            if (dScore > 21) return bet * 2; // Dealer Bust
-            if (pScore > dScore) return bet * 2; // Win
+            if (dScore > 21) return bet * winMult; // Dealer Bust
+            if (pScore > dScore) return bet * winMult; // Win
             if (pScore === dScore) return bet; // Push
             return 0; // Loss
         };
@@ -1412,11 +1434,11 @@ class Game {
                 this.showFloatText("BUST", "#player-zone", "red");
                 totalWinnings = 0;
             } else if (dScore > 21) {
-                this.showFloatText("DEALER BUST!", "#dealer-zone", varVal('--gold'));
-                totalWinnings = this.currentBet * 2;
+                this.showFloatText(hasMagnet ? "CHIP MAGNET!" : "DEALER BUST!", "#dealer-zone", varVal('--gold'));
+                totalWinnings = this.currentBet * winMult;
             } else if (pScore > dScore) {
-                this.showFloatText("YOU WIN!", "#player-zone", varVal('--green'));
-                totalWinnings = this.currentBet * 2;
+                this.showFloatText(hasMagnet ? "CHIP MAGNET!" : "YOU WIN!", "#player-zone", varVal('--green'));
+                totalWinnings = this.currentBet * winMult;
             } else if (pScore === dScore) {
                 this.showFloatText("PUSH", "#table-area", "#fff");
                 totalWinnings = this.currentBet;
@@ -1447,7 +1469,13 @@ class Game {
         if (multiplier === "push") {
             winnings = this.currentBet;
         } else if (multiplier > 0) {
-            let ratio = (multiplier === 1.5 && this.hasItem('magnet')) ? 3 : (multiplier === 1.5 ? 1.5 : 1);
+            let ratio = multiplier;
+            
+            // Magnet Logic for Natural Blackjack
+            if (this.hasItem('magnet')) {
+                ratio = 3; // 3:1 payout
+            }
+            
             winnings = Math.floor(this.currentBet + (this.currentBet * ratio));
         }
 
@@ -1473,6 +1501,7 @@ class Game {
 
     openShop() {
         // Clear buffs from previous round so they don't stack indefinitely
+        // Power ups never last for more than one round
         this.activeItems = [];
         this.renderItemsBar();
 
