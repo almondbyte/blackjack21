@@ -1171,6 +1171,12 @@ class Game {
 
     async hit() {
         if (this.isBusy) return;
+        
+        // FIX: Hide split and double buttons immediately when user hits
+        // (Cannot split or double after taking a card)
+        document.getElementById('btn-split').style.display = 'none';
+        document.getElementById('btn-double').style.display = 'none'; 
+
         this.isBusy = true;
 
         await this.dealCardTo(this.playerHand);
