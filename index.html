@@ -112,13 +112,14 @@
         /* --- Layout --- */
         #hud {
             height: 60px;
-            background-color: var(--blue);
+            background-color: rgba(15, 52, 96, 0.9);
             border-bottom: 2px solid var(--accent);
             display: flex;
             justify-content: space-between;
             align-items: center;
             padding: 0 20px;
             z-index: 10;
+            backdrop-filter: blur(5px);
             box-shadow: 0 5px 15px rgba(0,0,0,0.5);
         }
 
@@ -225,7 +226,6 @@
             transform-style: preserve-3d;
         }
         
-        /* FIX: Targeted class selector for colors */
         .card-front.red { color: #d00; }
         .card-front.black { color: #111; }
 
@@ -285,13 +285,14 @@
 
         /* --- Controls --- */
         #controls {
-            background: #0a0a0a;
+            background: rgba(10, 10, 10, 0.95);
             padding: 20px;
             display: flex;
             justify-content: center;
             gap: 15px;
             padding-bottom: calc(20px + env(safe-area-inset-bottom));
             border-top: 1px solid #333;
+            backdrop-filter: blur(5px);
         }
 
         .btn {
@@ -334,90 +335,173 @@
         /* --- Overlays --- */
         .overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.3);
+            background: rgba(0,0,0,0.4);
             display: none; flex-direction: column;
             align-items: center; justify-content: center;
             z-index: 1000; padding: 20px;
-            backdrop-filter: blur(3px);
+            backdrop-filter: blur(8px);
         }
 
         .overlay-title {
-            font-size: 3rem; color: var(--accent);
+            font-size: 2.5rem; color: var(--accent);
             text-shadow: 0 0 15px var(--accent);
-            margin-bottom: 10px; font-weight: 900;
+            margin-bottom: 20px; font-weight: 900;
+            letter-spacing: 2px;
         }
 
-        /* --- NEW CHIP BETTING UI --- */
+        /* --- REVAMPED CHIP BETTING UI --- */
         .bet-container {
             width: 100%;
-            max-width: 500px;
+            max-width: 600px;
+            background: rgba(0, 0, 0, 0.6);
+            border: 2px solid var(--neon-blue);
+            box-shadow: 0 0 30px rgba(0, 255, 242, 0.2), inset 0 0 20px rgba(0,0,0,0.5);
+            border-radius: 20px;
+            padding: 30px;
             display: flex;
             flex-direction: column;
             align-items: center;
             gap: 20px;
-        }
-
-        .pot-display {
-            font-size: 3rem;
-            color: var(--gold);
-            text-shadow: 0 0 20px var(--gold);
-            margin: 20px 0;
-            font-weight: bold;
             position: relative;
+            overflow: hidden;
         }
         
-        /* Animation class for when money is added */
-        .pot-bump { animation: potBump 0.2s ease-out; }
-        @keyframes potBump { 0% { transform: scale(1); } 50% { transform: scale(1.3); } 100% { transform: scale(1); } }
+        /* Decorative grid lines inside bet container */
+        .bet-container::before {
+            content:''; position:absolute; top:0; left:0; width:100%; height:100%;
+            background: linear-gradient(rgba(0,255,242,0.05) 1px, transparent 1px),
+                        linear-gradient(90deg, rgba(0,255,242,0.05) 1px, transparent 1px);
+            background-size: 20px 20px;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        /* 3D Chip Stack Area */
+        .chip-stack-zone {
+            width: 200px;
+            height: 150px;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            margin: 20px 0;
+            perspective: 800px;
+        }
+
+        .pot-label {
+            position: absolute;
+            top: -30px;
+            width: 100%;
+            text-align: center;
+            color: var(--gold);
+            font-size: 2rem;
+            font-weight: 900;
+            text-shadow: 0 0 15px var(--gold);
+        }
+
+        /* Actual chips in the stack */
+        .stacked-chip {
+            width: 60px; height: 60px;
+            border-radius: 50%;
+            position: absolute;
+            box-shadow: 0 3px 0 #000;
+            border: 4px dashed rgba(255,255,255,0.4);
+            transform-style: preserve-3d;
+            transition: transform 0.3s;
+        }
+        .stacked-chip::after {
+            content: ''; position: absolute; inset: 0;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.4), transparent);
+        }
 
         .chip-rack {
             display: flex;
-            gap: 15px;
+            gap: 20px;
             justify-content: center;
             flex-wrap: wrap;
             margin-bottom: 20px;
+            padding: 15px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 50px;
+            border: 1px solid rgba(255,255,255,0.1);
         }
 
         .chip {
-            width: 70px; height: 70px;
+            width: 75px; height: 75px;
             border-radius: 50%;
-            border: 4px dashed rgba(255,255,255,0.5);
+            border: 5px dashed rgba(255,255,255,0.6);
             display: flex;
             justify-content: center;
             align-items: center;
-            font-weight: bold;
-            font-size: 1.2rem;
+            font-weight: 900;
+            font-size: 1.1rem;
             color: #fff;
             text-shadow: 0 1px 2px rgba(0,0,0,0.8);
-            box-shadow: 0 5px 10px rgba(0,0,0,0.5);
+            box-shadow: 0 8px 15px rgba(0,0,0,0.4), inset 0 0 10px rgba(0,0,0,0.3);
             cursor: pointer;
             transition: transform 0.1s, filter 0.2s;
             user-select: none;
+            position: relative;
+            overflow: hidden;
         }
         
-        .chip:active { transform: scale(0.95); }
-        .chip:hover { filter: brightness(1.2); }
-
-        .chip-5 { background: radial-gradient(#e74c3c, #c0392b); }
-        .chip-10 { background: radial-gradient(#3498db, #2980b9); }
-        .chip-25 { background: radial-gradient(#2ecc71, #27ae60); }
-        .chip-100 { background: radial-gradient(#333, #000); border-color: var(--gold); color: var(--gold); }
-
-        .bet-actions {
-            display: flex; gap: 10px; width: 100%; justify-content: center;
+        .chip::before {
+            content: ''; position: absolute; width: 100%; height: 100%;
+            border-radius: 50%;
+            border: 2px solid rgba(255,255,255,0.2);
+            box-sizing: border-box;
+            pointer-events: none;
         }
 
-        .btn-secondary { background: #555; font-size: 0.9rem; padding: 10px 20px; }
-        .btn-allin { background: var(--gold); color: #000; }
+        /* Shine effect */
+        .chip::after {
+            content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+            background: linear-gradient(45deg, transparent 40%, rgba(255,255,255,0.3) 50%, transparent 60%);
+            transform: rotate(45deg);
+            pointer-events: none;
+        }
+
+        .chip:active { transform: scale(0.9); }
+        .chip:hover { filter: brightness(1.3); transform: translateY(-5px); }
+
+        .chip-5 { background: radial-gradient(circle at 30% 30%, #ff6b6b, #c0392b); border-color: #ffcccc; }
+        .chip-10 { background: radial-gradient(circle at 30% 30%, #54a0ff, #2980b9); border-color: #cceeff; }
+        .chip-25 { background: radial-gradient(circle at 30% 30%, #55efc4, #00b894); border-color: #ccffee; }
+        .chip-100 { background: radial-gradient(circle at 30% 30%, #333, #000); border-color: var(--gold); color: var(--gold); }
+
+        .bet-actions {
+            display: flex; gap: 15px; width: 100%; justify-content: center;
+        }
+
+        .btn-secondary { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); font-size: 0.9rem; padding: 12px 24px; }
+        .btn-secondary:hover { background: rgba(255,255,255,0.2); }
+        .btn-allin { background: var(--gold); color: #000; box-shadow: 0 0 15px rgba(255, 215, 0, 0.4); border:none;}
+        
+        /* Disabled state specifically for All In */
+        .btn-allin:disabled {
+            background: #444; color: #888;
+            box-shadow: none; border: 1px solid #555;
+            cursor: not-allowed; opacity: 0.6;
+            filter: grayscale(1);
+        }
 
         /* Floating Chip Animation */
         .flying-chip {
             position: fixed;
-            width: 70px; height: 70px;
+            width: 75px; height: 75px;
             border-radius: 50%;
             z-index: 2000;
             pointer-events: none;
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.27);
+            transition: all 0.5s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+        
+        .toss-spin {
+            animation: chipSpin 0.5s linear;
+        }
+        @keyframes chipSpin {
+            0% { transform: rotate(0deg) scale(1); }
+            100% { transform: rotate(720deg) scale(0.6); }
         }
 
         /* Shop Grid */
@@ -577,27 +661,28 @@
         <div class="overlay-title" style="color:var(--neon-blue);">PLACE YOUR BET</div>
         
         <div class="bet-container">
-            <div class="pot-display" id="pot-display">
-                $<span id="temp-wager-val">0</span>
+            <!-- 3D Stack Visualization -->
+            <div class="chip-stack-zone" id="chip-stack-container">
+                <div class="pot-label">$<span id="temp-wager-val">0</span></div>
             </div>
             
             <div style="color:#aaa; margin-bottom:10px;">Balance: $<span id="bet-balance">100</span></div>
 
             <!-- Chips Rack -->
             <div class="chip-rack">
-                <div class="chip chip-5" onclick="game.addChip(5, event)">$5</div>
-                <div class="chip chip-10" onclick="game.addChip(10, event)">$10</div>
-                <div class="chip chip-25" onclick="game.addChip(25, event)">$25</div>
-                <div class="chip chip-100" onclick="game.addChip(100, event)">$100</div>
+                <div class="chip chip-5" onclick="game.addChip(5, event)">5</div>
+                <div class="chip chip-10" onclick="game.addChip(10, event)">10</div>
+                <div class="chip chip-25" onclick="game.addChip(25, event)">25</div>
+                <div class="chip chip-100" onclick="game.addChip(100, event)">100</div>
             </div>
 
             <!-- Actions -->
             <div class="bet-actions">
                 <button class="btn btn-secondary" onclick="game.clearBet()">CLEAR</button>
-                <button class="btn btn-secondary btn-allin" onclick="game.allIn()">ALL IN</button>
+                <button id="btn-allin" class="btn btn-secondary btn-allin" onclick="game.allIn()">ALL IN</button>
             </div>
 
-            <button class="btn btn-deal" style="width:300px; margin-top:20px;" onclick="game.startRound()">DEAL HAND</button>
+            <button class="btn btn-deal" style="width:100%; margin-top:20px;" onclick="game.startRound()">DEAL HAND</button>
         </div>
     </div>
 
@@ -638,25 +723,36 @@
     uniform float u_time;
     uniform vec2 u_resolution;
     
-    // New uniforms for dynamic color shifting
-    uniform vec3 u_color_mult; // Multipliers for R, G, B wave components
-    uniform vec3 u_bg_color;   // Base background color
+    // Dynamic multipliers for game state
+    uniform vec3 u_color_mult; 
+    uniform vec3 u_bg_color;
 
     void main() {
-        vec2 uv = gl_FragCoord.xy / u_resolution.xy;
+        // Centered UVs
+        vec2 p = (gl_FragCoord.xy * 2.0 - u_resolution) / min(u_resolution.x, u_resolution.y);
         
-        // Original wave math
-        float v1 = sin(uv.x * 5.0 + u_time * 0.5);
-        float v2 = cos(uv.y * 5.0 - u_time * 0.3);
-        float r = sin(uv.x * 6.0 + u_time + v1) * 0.5 + 0.5;
-        float g = cos(uv.y * 7.0 - u_time + v2) * 0.5 + 0.5;
-        float b = sin((uv.x + uv.y) * 8.0 + u_time) * 0.5 + 0.5;
+        // Domain warping for intricate psychedelic feel
+        for(float i = 1.0; i < 4.0; i++){
+            p.x += 0.3 / i * sin(i * 3.0 * p.y + u_time * 0.5);
+            p.y += 0.3 / i * cos(i * 3.0 * p.x + u_time * 0.5);
+        }
+
+        // Plasma color generation pattern
+        float r = cos(p.x + p.y + 1.0) * 0.5 + 0.5;
+        float g = sin(p.x - p.y + 1.0) * 0.5 + 0.5;
+        float b = (sin(p.x * p.y + u_time) + 1.0) * 0.5;
         
-        // Apply dynamic multipliers instead of hardcoded values
-        vec3 color = vec3(r * u_color_mult.x, g * u_color_mult.y, b * u_color_mult.z);
+        vec3 color = vec3(r, g, b);
         
-        // Mix with dynamic background color
-        vec3 finalColor = mix(u_bg_color, color, 0.4);
+        // WEALTH SEED Logic: Multipliers determined by money, not game state
+        vec3 finalColor = color * u_color_mult;
+        
+        // Vignette
+        float len = length(p);
+        finalColor *= smoothstep(1.5, 0.5, len);
+
+        // Mix with dark background based on state
+        finalColor = mix(u_bg_color, finalColor, 0.5);
         
         gl_FragColor = vec4(finalColor, 1.0);
     }
@@ -667,28 +763,32 @@
 
 // Global state for background transition
 const bgState = {
-    currentMult: [0.8, 0.2, 0.6], // Starts at Game default
+    currentMult: [0.8, 0.2, 0.6], 
     targetMult: [0.8, 0.2, 0.6],
     currentBg: [0.05, 0.05, 0.1],
     targetBg: [0.05, 0.05, 0.1]
 };
 
-// Function to set the background mode
-const setBgMode = (mode) => {
-    if (mode === 'betting') {
-        // Shades of Green (Velvet table)
-        // R low, G high, B low-mid for richness
-        bgState.targetMult = [0.1, 0.8, 0.3]; 
-        bgState.targetBg = [0.0, 0.1, 0.02];
-    } else if (mode === 'game') {
-        // Original Neon (Purple/Red/Blue)
-        bgState.targetMult = [0.8, 0.2, 0.6];
-        bgState.targetBg = [0.05, 0.05, 0.1];
-    } else if (mode === 'gameover') {
-        // Red and Black (System Failure)
-        bgState.targetMult = [0.9, 0.0, 0.0];
-        bgState.targetBg = [0.0, 0.0, 0.0];
-    }
+// Wealth-Based Shader Logic
+// Generates RGB multipliers deterministically based on money amount
+const updateShaderFromWealth = (money) => {
+    // Hash function to generate pseudo-random 0.0 - 1.0 range from an integer
+    const hash = (n) => {
+        return Math.abs(Math.sin(n * 12.9898 + 78.233) * 43758.5453) % 1;
+    };
+    
+    // Seed different components differently
+    const r = 0.2 + hash(money) * 1.5;     // Min 0.2, Max 1.7
+    const g = 0.2 + hash(money + 42) * 1.5;
+    const b = 0.2 + hash(money + 137) * 1.5;
+
+    // Background darkness variation (keep it darkish)
+    const br = hash(money + 99) * 0.15; 
+    const bg = hash(money + 12) * 0.15;
+    const bb = hash(money + 77) * 0.25; // allow blue to pop more
+
+    bgState.targetMult = [r, g, b];
+    bgState.targetBg = [br, bg, bb];
 };
 
 // Linear interpolation helper
@@ -895,9 +995,6 @@ class Game {
         
         // Reset busy state for new round
         this.isBusy = false;
-        
-        // SET BACKGROUND TO GREEN
-        setBgMode('betting');
 
         // Reset Table
         this.dealerHand = [];
@@ -916,13 +1013,17 @@ class Game {
         // Setup Betting UI
         this.tempWager = 0;
         this.renderBetUI();
+        
+        // Clear previous visual chip stacks
+        document.querySelectorAll('.stacked-chip').forEach(el => el.remove());
+        
         document.getElementById('bet-overlay').style.display = 'flex';
     }
 
     addChip(val, event) {
         // Ensure user can't bet more than they have
         if (this.tempWager + val > this.money) {
-            this.showFloatText("INSUFFICIENT FUNDS", "#pot-display", "red");
+            this.showFloatText("INSUFFICIENT FUNDS", "#temp-wager-val", "red");
             return;
         }
 
@@ -934,23 +1035,57 @@ class Game {
     clearBet() {
         this.tempWager = 0;
         this.renderBetUI();
+        // Clear visual chips
+        document.querySelectorAll('.stacked-chip').forEach(el => el.remove());
     }
 
     allIn() {
+        this.clearBet(); // Clears logic to 0 and removes visual chips
+        
+        // Set logic to max
         this.tempWager = this.money;
         this.renderBetUI();
-        this.showFloatText("ALL IN!", "#pot-display", "var(--gold)");
+        this.showFloatText("ALL IN!", "#temp-wager-val", "var(--gold)");
+
+        // Trigger animations
+        const chipTypes = [
+            { val: 5, selector: '.chip-5' },
+            { val: 10, selector: '.chip-10' },
+            { val: 25, selector: '.chip-25' },
+            { val: 100, selector: '.chip-100' }
+        ];
+
+        chipTypes.forEach((c, i) => {
+            const el = document.querySelector(c.selector);
+            if(el) {
+                const rect = el.getBoundingClientRect();
+                // Mock event for existing function
+                const mockEvt = {
+                    clientX: rect.left + rect.width/2,
+                    clientY: rect.top + rect.height/2,
+                    target: { className: el.className } // captures 'chip chip-5' etc
+                };
+                
+                // Stagger them slightly for a "flurry" effect
+                setTimeout(() => {
+                    this.animateChipThrow(mockEvt, c.val);
+                }, i * 100); 
+            }
+        });
     }
 
     renderBetUI() {
-        const potEl = document.getElementById('pot-display');
         document.getElementById('temp-wager-val').innerText = this.tempWager;
         document.getElementById('bet-balance').innerText = this.money - this.tempWager;
         
-        // Pot bump animation
-        potEl.classList.remove('pot-bump');
-        void potEl.offsetWidth; // reflow
-        potEl.classList.add('pot-bump');
+        // NEW LOGIC: Disable "ALL IN" if no chips left
+        const remaining = this.money - this.tempWager;
+        const allInBtn = document.getElementById('btn-allin');
+        if (remaining <= 0) {
+            allInBtn.disabled = true;
+        } else {
+            allInBtn.disabled = false;
+        }
     }
 
     animateChipThrow(event, val) {
@@ -958,42 +1093,66 @@ class Game {
         const startX = event.clientX;
         const startY = event.clientY;
         
-        // Get pot coordinates
-        const pot = document.getElementById('pot-display');
-        const rect = pot.getBoundingClientRect();
+        // Get stack zone coordinates
+        const zone = document.getElementById('chip-stack-container');
+        const rect = zone.getBoundingClientRect();
+        
+        // Center of the stack zone
         const endX = rect.left + rect.width / 2;
-        const endY = rect.top + rect.height / 2;
+        const endY = rect.bottom - 40; // Aim for bottom of stack
 
         // Create flying chip
         const el = document.createElement('div');
-        // Clone classes from the clicked chip to match color
-        el.className = event.target.className + ' flying-chip';
-        el.innerText = `$${val}`;
-        el.style.left = (startX - 35) + 'px';
-        el.style.top = (startY - 35) + 'px';
+        el.className = event.target.className + ' flying-chip toss-spin';
+        el.innerText = ``; // No text while flying for clean look
+        el.style.left = (startX - 37) + 'px';
+        el.style.top = (startY - 37) + 'px';
         
         document.body.appendChild(el);
 
-        // Force layout for transition
+        // Calculate a bezier-like arc manually via translation
         requestAnimationFrame(() => {
-            el.style.left = (endX - 35) + 'px';
-            el.style.top = (endY - 35) + 'px';
-            el.style.transform = "scale(0.5)";
-            el.style.opacity = "0.5";
+            el.style.left = (endX - 37) + 'px';
+            el.style.top = (endY - 37) + 'px';
+            el.style.transform = "scale(0.6)"; // Shrink to match stack size
         });
 
-        setTimeout(() => el.remove(), 400);
+        // When animation lands, create a permanent stack element
+        setTimeout(() => {
+            el.remove();
+            this.addToStack(val, event.target.className);
+        }, 500);
+    }
+    
+    addToStack(val, className) {
+        const zone = document.getElementById('chip-stack-container');
+        const count = zone.childElementCount; // Count existing chips (ignoring label)
+        
+        const chip = document.createElement('div');
+        // Extract chip color class (chip-5, chip-10 etc)
+        const colorClass = className.split(' ').find(c => c.startsWith('chip-'));
+        chip.className = `stacked-chip ${colorClass}`;
+        
+        // Stack logic: slight randomness in position + vertical stacking
+        const offset = Math.random() * 8 - 4;
+        const rotate = Math.random() * 360;
+        
+        // Don't count the label as a chip
+        const chipCount = document.querySelectorAll('.stacked-chip').length;
+        
+        chip.style.bottom = (chipCount * 6) + 'px';
+        chip.style.left = `calc(50% - 30px + ${offset}px)`;
+        chip.style.transform = `rotate(${rotate}deg)`;
+        
+        zone.appendChild(chip);
     }
 
     startRound() {
         if (this.tempWager < 5) {
-            this.showFloatText("Min Bet $5", "#pot-display", "red");
+            this.showFloatText("Min Bet $5", "#temp-wager-val", "red");
             return;
         }
         
-        // SET BACKGROUND TO GAME (Neon)
-        setBgMode('game');
-
         this.currentBet = this.tempWager;
         this.money -= this.currentBet;
         this.updateMoneyUI();
@@ -1044,8 +1203,6 @@ class Game {
         const rank1 = this.playerHand[0].rank;
         const rank2 = this.playerHand[1].rank;
 
-        // Standard Blackjack split rule: cards must have the exact same RANK.
-        //For example 10 and J cannot split but J and J can. The strictest rule is same RANK. We enforce same RANK here.
         if (rank1 === rank2) {
             // Hide Double, Show Split
             document.getElementById('btn-double').style.display = 'none';
@@ -1076,9 +1233,6 @@ class Game {
         if (hand === this.dealerHand) {
             container = this.ui.dealerCards;
         } else if (this.isSplitMode) {
-            // If split mode, find the container for the active hand
-            // But initially we might be dealing to a hand that isn't "active" yet (e.g. second card of split)
-            // So we rely on the activeHandIndex logic inside dealCardTo only if we are hitting
             container = document.getElementById(`hand-${this.activeHandIndex + 1}`);
         } else {
             container = this.ui.playerCards;
@@ -1165,8 +1319,6 @@ class Game {
     async hit() {
         if (this.isBusy) return;
         
-        // FIX: Hide split and double buttons immediately when user hits
-        // (Cannot split or double after taking a card)
         document.getElementById('btn-split').style.display = 'none';
         document.getElementById('btn-double').style.display = 'none'; 
 
@@ -1190,17 +1342,13 @@ class Game {
                 return;
             }
 
-            // Logic for finishing this hand (either bust or 21)
             if (score > 21) {
-                // Keep the final 'BUST' popup
-                // We show this at the end of the round, not immediately on hit. 
-                // The previous change already removed the immediate 'BUST!' popup.
+                // Bust logic handled in stand/end
             } else {
                 this.showFloatText("21!", this.isSplitMode ? `#hand-${this.activeHandIndex+1}` : "#player-zone", "var(--gold)");
             }
             
             await new Promise(r => setTimeout(r, 1000));
-            // CRITICAL FIX: Bypass isBusy check by calling internal method directly
             await this._performStand(); 
         } else {
             this.isBusy = false; // Safe to click again
@@ -1208,13 +1356,11 @@ class Game {
     }
 
     async stand() {
-        // Button click handler
         if (this.isBusy) return;
         this.isBusy = true;
         await this._performStand();
     }
     
-    // Internal method (actual logic)
     async _performStand() {
         if (this.isSplitMode) {
             // Mark current hand finished
@@ -1250,7 +1396,6 @@ class Game {
         this.gameState = 'DEALER_TURN';
         this.toggleControls(false);
         
-        // If all hands busted, skip dealer logic (optimization)
         let allBusted = false;
         if (this.isSplitMode) {
             allBusted = this.splitHands.every(h => this.calculateScore(h.hand) > 21);
@@ -1272,10 +1417,8 @@ class Game {
         await new Promise(r => setTimeout(r, 800));
 
         if (!allBusted) {
-            // NEW AI LOGIC: Determine the best player score to beat
             let bestPlayerScore = 0;
             if (this.isSplitMode) {
-                // Find max score among non-busted hands
                 this.splitHands.forEach(h => {
                     if (h.score <= 21 && h.score > bestPlayerScore) {
                         bestPlayerScore = h.score;
@@ -1287,12 +1430,7 @@ class Game {
 
             while (true) {
                 const dScore = this.calculateScore(this.dealerHand);
-                
-                // AI Rule: If dealer is already beating the player's best score, stand immediately.
-                // This prevents the dealer from hitting on 15 when player has 12.
                 if (dScore > bestPlayerScore) break;
-
-                // Standard Rule: Dealer must stand on 17 or higher
                 if (dScore >= 17) break;
                 
                 await this.dealCardTo(this.dealerHand);
@@ -1301,13 +1439,11 @@ class Game {
         }
 
         this.determineWinner();
-        // Round ends, isBusy remains true until next round starts
     }
 
     async doubleDown() {
         if (this.isBusy) return;
 
-        // Check funds
         let required = this.isSplitMode ? this.splitHands[this.activeHandIndex].bet : this.currentBet;
 
         if (this.money >= required) {
@@ -1326,11 +1462,10 @@ class Game {
             this.updateScores(false);
             
             if (score > 21) {
-                // No immediate "BUST!" popup
                 await new Promise(r => setTimeout(r, 1000));
             }
             
-            await this._performStand(); // Force stand after double
+            await this._performStand();
         } else {
             this.showFloatText("Not enough cash!", "#btn-double", "red");
         }
@@ -1355,14 +1490,10 @@ class Game {
     }
 
     updateScores(showFullDealer) {
-        // Player Score (Active Hand)
         const pScore = this.calculateScore(this.playerHand);
         this.ui.playerScore.innerText = pScore;
         this.ui.playerScore.classList.add('visible');
 
-        // If split, update score bubble position or show multiple?
-        // Currently simplified to show active hand score in the main bubble. 
-        // Ideally, split UI would have score bubbles per hand, but fitting into existing UI:
         if (this.isSplitMode) {
              this.ui.playerScore.innerText = `H${this.activeHandIndex+1}: ${pScore}`;
         }
@@ -1382,36 +1513,27 @@ class Game {
         this.ui.dealerScore.classList.add('visible');
     }
 
-    handleBust() {
-        // Not used directly anymore, logic moved to hit/stand for split support
-    }
-
     determineWinner() {
         const dScore = this.calculateScore(this.dealerHand);
         let totalWinnings = 0;
         
-        // Magnet Logic: If active, win multiplier is 4 (3:1 payout + bet back). Normal is 2 (1:1 payout + bet back)
         const hasMagnet = this.hasItem('magnet');
         const winMult = hasMagnet ? 4 : 2;
 
-        // Helper to calc result for one hand
         const resolveHand = (pScore, bet) => {
-            if (pScore > 21) return 0; // Bust
-            if (dScore > 21) return bet * winMult; // Dealer Bust
-            if (pScore > dScore) return bet * winMult; // Win
-            if (pScore === dScore) return bet; // Push
-            return 0; // Loss
+            if (pScore > 21) return 0;
+            if (dScore > 21) return bet * winMult;
+            if (pScore > dScore) return bet * winMult;
+            if (pScore === dScore) return bet; 
+            return 0;
         };
 
         if (this.isSplitMode) {
-            // Process Hand 1
             const r1 = resolveHand(this.splitHands[0].score, this.splitHands[0].bet);
-            // Process Hand 2
             const r2 = resolveHand(this.splitHands[1].score, this.splitHands[1].bet);
             
             totalWinnings = r1 + r2;
 
-            // Display Text
             if (totalWinnings > (this.splitHands[0].bet + this.splitHands[1].bet)) {
                 this.showFloatText("NET WIN!", "#table-area", "var(--green)");
             } else if (totalWinnings === 0) {
@@ -1440,13 +1562,11 @@ class Game {
             }
         }
 
-        // Process Payout
         if (totalWinnings > 0) {
             this.money += totalWinnings;
             this.updateMoneyUI();
         }
         
-        // Check for bankruptcy
         if (this.money < 5) {
             setTimeout(() => this.triggerGameOver(), 1500);
         } else {
@@ -1455,19 +1575,13 @@ class Game {
     }
 
     endRound(multiplier) {
-        // Legacy function kept for natural blackjack immediate win
         let winnings = 0;
         
         if (multiplier === "push") {
             winnings = this.currentBet;
         } else if (multiplier > 0) {
             let ratio = multiplier;
-            
-            // Magnet Logic for Natural Blackjack
-            if (this.hasItem('magnet')) {
-                ratio = 3; // 3:1 payout
-            }
-            
+            if (this.hasItem('magnet')) ratio = 3;
             winnings = Math.floor(this.currentBet + (this.currentBet * ratio));
         }
 
@@ -1484,16 +1598,11 @@ class Game {
     }
 
     triggerGameOver() {
-        // SET BACKGROUND TO RED/BLACK
-        setBgMode('gameover');
-
         document.getElementById('go-rounds').innerText = this.rounds;
         document.getElementById('game-over').style.display = 'flex';
     }
 
     openShop() {
-        // Clear buffs from previous round so they don't stack indefinitely
-        // Power ups never last for more than one round
         this.activeItems = [];
         this.renderItemsBar();
 
@@ -1551,20 +1660,21 @@ class Game {
                 btn.style.display = 'block';
             }
         });
-        // Always hide Split when toggling general controls reset
         document.getElementById('btn-split').style.display = 'none';
     }
 
     updateMoneyUI() {
         this.ui.money.innerText = this.money;
         
-        // Fix for Split Bet Display
         let displayBet = this.currentBet;
         if (this.isSplitMode && this.splitHands.length > 0) {
             displayBet = this.splitHands.reduce((acc, hand) => acc + hand.bet, 0);
         }
         
         this.ui.bet.innerText = displayBet;
+        
+        // Update background color based on wealth seed immediately
+        updateShaderFromWealth(this.money);
     }
 
     hasItem(id) {
@@ -1632,4 +1742,5 @@ window.addEventListener('beforeinstallprompt', (e) => {
 
 </body>
 </html>
+
 
