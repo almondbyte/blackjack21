@@ -638,33 +638,25 @@
     uniform float u_time;
     uniform vec2 u_resolution;
     
-    // Dynamic color shifting uniforms
-    uniform vec3 u_color_mult; 
-    uniform vec3 u_bg_color;
+    // New uniforms for dynamic color shifting
+    uniform vec3 u_color_mult; // Multipliers for R, G, B wave components
+    uniform vec3 u_bg_color;   // Base background color
 
     void main() {
-        // Fixed: More intricate plasma algorithm
-        vec2 uv = (gl_FragCoord.xy * 2.0 - u_resolution) / min(u_resolution.x, u_resolution.y);
-        vec2 p = uv;
-        float t = u_time * 0.3;
+        vec2 uv = gl_FragCoord.xy / u_resolution.xy;
         
-        // Create complexity through iteration (The "Psychedelic" loop)
-        for(float i = 1.0; i < 5.0; i++) {
-            p.x += 0.3 / i * sin(i * 3.0 * p.y + t);
-            p.y += 0.3 / i * cos(i * 3.0 * p.x + t);
-        }
+        // Original wave math
+        float v1 = sin(uv.x * 5.0 + u_time * 0.5);
+        float v2 = cos(uv.y * 5.0 - u_time * 0.3);
+        float r = sin(uv.x * 6.0 + u_time + v1) * 0.5 + 0.5;
+        float g = cos(uv.y * 7.0 - u_time + v2) * 0.5 + 0.5;
+        float b = sin((uv.x + uv.y) * 8.0 + u_time) * 0.5 + 0.5;
         
-        // Generate pattern values based on distorted coordinates
-        float r = cos(p.x + p.y + 1.0) * 0.5 + 0.5;
-        float g = sin(p.x + p.y + 1.0) * 0.5 + 0.5;
-        float b = (sin(p.x + p.y) + cos(p.x + p.y)) * 0.25 + 0.5;
+        // Apply dynamic multipliers instead of hardcoded values
+        vec3 color = vec3(r * u_color_mult.x, g * u_color_mult.y, b * u_color_mult.z);
         
-        // Combine pattern with Game State Colors
-        vec3 pattern = vec3(r, g, b);
-        vec3 finalColor = pattern * u_color_mult * 0.8; 
-        
-        // Mix with background to keep it readable but vibrant
-        finalColor = mix(u_bg_color, finalColor, 0.5);
+        // Mix with dynamic background color
+        vec3 finalColor = mix(u_bg_color, color, 0.4);
         
         gl_FragColor = vec4(finalColor, 1.0);
     }
