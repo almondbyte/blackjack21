@@ -1655,18 +1655,21 @@ class Game {
             allBusted = this.calculateScore(this.playerHand) > 21;
         }
 
-        const hiddenCard = this.dealerHand.find(c => c.isHidden);
-        if (hiddenCard) {
-            hiddenCard.isHidden = false;
-            const el = document.getElementById(hiddenCard.id);
-            el.style.transform = "rotateY(90deg)";
-            setTimeout(() => {
-                el.classList.remove('flipped');
-                el.style.transform = "rotateY(0deg)";
-            }, 150);
+        // MODIFY: Only reveal if not all busted
+        if (!allBusted) {
+            const hiddenCard = this.dealerHand.find(c => c.isHidden);
+            if (hiddenCard) {
+                hiddenCard.isHidden = false;
+                const el = document.getElementById(hiddenCard.id);
+                el.style.transform = "rotateY(90deg)";
+                setTimeout(() => {
+                    el.classList.remove('flipped');
+                    el.style.transform = "rotateY(0deg)";
+                }, 150);
+            }
+            this.updateScores(true);
+            await new Promise(r => setTimeout(r, 800));
         }
-        this.updateScores(true);
-        await new Promise(r => setTimeout(r, 800));
 
         if (!allBusted) {
             let bestPlayerScore = 0;
@@ -1845,6 +1848,9 @@ class Game {
 
         // 1. Check for Loss to trigger Burn
         if (playerNet < 0) {
+            // MODIFY: Add 500ms delay here
+            await new Promise(r => setTimeout(r, 500));
+            
             // BURN IT DOWN
             await this.triggerBurnAnim();
             
@@ -1907,6 +1913,7 @@ class Game {
             // This path usually not reached in current blackjack logic (instant win), 
             // but for safety:
              (async () => {
+                await new Promise(r => setTimeout(r, 500)); // Also add delay here for consistency
                 await this.triggerBurnAnim();
                 if (this.money < 5) this.triggerGameOver();
                 else this.openShop();
@@ -2079,4 +2086,5 @@ window.addEventListener('beforeinstallprompt', (e) => {
 
 </body>
 </html>
+
 
