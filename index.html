@@ -64,14 +64,6 @@
             pointer-events: none; z-index: 999; opacity: 0.6;
         }
 
-        .shake-anim { animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both; }
-        @keyframes shake {
-            10%, 90% { transform: translate3d(-4px, 0, 0); }
-            20%, 80% { transform: translate3d(6px, 0, 0); }
-            30%, 50%, 70% { transform: translate3d(-8px, 0, 0); }
-            40%, 60% { transform: translate3d(8px, 0, 0); }
-        }
-
         /* BLACKJACK CELEBRATION STYLES */
         #blackjack-overlay {
             position: absolute;
@@ -276,6 +268,14 @@
             transform: translate(-50%, -50%);
         }
 
+        /* --- SOLITAIRE TRAIL STYLES --- */
+        .trail-card {
+            position: fixed;
+            pointer-events: none;
+            /* opacity: 1; Implicit 100% opacity for solid look */
+            z-index: 9000;
+        }
+
         /* Animations */
         @keyframes dealFlyIn {
             from { transform: translate(200px, -400px) rotate(180deg) scale(0.5); opacity: 0; }
@@ -293,6 +293,7 @@
             padding-bottom: calc(20px + env(safe-area-inset-bottom));
             border-top: 1px solid #333;
             backdrop-filter: blur(5px);
+            z-index: 100;
         }
 
         .btn {
@@ -876,6 +877,156 @@ const ITEMS = [
     { id: 'magnet', name: 'Chip Magnet', desc: 'Next win pays 3:1', cost: 30 }
 ];
 
+// --- SOLITAIRE BOUNCE EFFECT ---
+class SolitaireBounce {
+    constructor() {
+        this.particles = [];
+        this.running = false;
+        this.frame = 0; // Frame counter for throttling trail
+    }
+
+    start(floorElementId) {
+        if (this.running) this.stop();
+
+        // 1. Get all cards currently on screen
+        const cards = document.querySelectorAll('.card');
+        if (cards.length === 0) return;
+
+        // 2. Find the floor position (Top of the Next Round button)
+        const floorEl = document.getElementById(floorElementId);
+        let floorY = window.innerHeight;
+        if (floorEl && floorEl.offsetParent !== null) {
+            const rect = floorEl.getBoundingClientRect();
+            floorY = rect.top; // The floor is exactly the top edge of the button
+        }
+
+        // 3. Clone cards to create physics particles
+        this.particles = Array.from(cards).map(card => {
+            const rect = card.getBoundingClientRect();
+            
+            // Create exact visual clone
+            const clone = card.cloneNode(true);
+            clone.style.position = 'fixed';
+            clone.style.left = rect.left + 'px';
+            clone.style.top = rect.top + 'px';
+            clone.style.margin = '0';
+            clone.style.transform = ''; 
+            clone.style.zIndex = '9999';
+            clone.style.transition = 'none'; // Physics needs direct control
+            clone.classList.remove('deal-anim'); 
+            clone.id = ""; // Remove ID to prevent duplicates
+            
+            // Make original invisible (cleaner look)
+            card.style.opacity = '0';
+            
+            document.body.appendChild(clone);
+
+            return {
+                el: clone,
+                x: rect.left,
+                y: rect.top,
+                w: rect.width,
+                h: rect.height,
+                // Random explosion velocity
+                vx: (Math.random() * 12) - 6, 
+                vy: (Math.random() * -15) - 5, 
+                gravity: 0.8,
+                bounce: 0.65 + (Math.random() * 0.15),
+                floorY: floorY
+            };
+        });
+
+        this.running = true;
+        this.animate();
+    }
+
+    animate() {
+        if (!this.running) return;
+        this.frame++;
+
+        let activeParticles = 0;
+        
+        this.particles.forEach(p => {
+            // Physics Step
+            p.vy += p.gravity;
+            p.x += p.vx;
+            p.y += p.vy;
+
+            // Floor Collision
+            if (p.y + p.h > p.floorY) {
+                p.y = p.floorY - p.h;
+                p.vy *= -p.bounce; // Reverse velocity with loss
+                
+                // Add friction on bounce
+                p.vx *= 0.95;
+
+                // Stop micro-bouncing
+                if (Math.abs(p.vy) < 2) p.vy = 0;
+            }
+
+            // Wall Collision (Sides)
+            if (p.x < 0) {
+                p.x = 0;
+                p.vx *= -0.8;
+            } else if (p.x + p.w > window.innerWidth) {
+                p.x = window.innerWidth - p.w;
+                p.vx *= -0.8;
+            }
+
+            // Render
+            p.el.style.left = p.x + 'px';
+            p.el.style.top = p.y + 'px';
+
+            // TRAIL LOGIC: Spawn trail every 3 frames
+            // Only spawn if moving significantly
+            if (this.frame % 3 === 0 && (Math.abs(p.vx) > 1 || Math.abs(p.vy) > 1)) {
+                this.spawnTrail(p);
+            }
+
+            // Check if particle is still relevant (on screen or moving)
+            // If it falls below screen (unlikely due to floor) or stops moving
+            if (Math.abs(p.vx) > 0.1 || Math.abs(p.vy) > 0.1 || p.y + p.h < p.floorY) {
+                activeParticles++;
+            }
+        });
+
+        if (activeParticles > 0) {
+            requestAnimationFrame(() => this.animate());
+        } else {
+            // Keep them visible in their piled state until cleared
+        }
+    }
+
+    spawnTrail(p) {
+        const trail = p.el.cloneNode(true);
+        trail.classList.add('trail-card');
+        trail.style.left = p.x + 'px';
+        trail.style.top = p.y + 'px';
+        trail.style.zIndex = '9000'; // Behind the main card (9999)
+        trail.removeAttribute('id'); // Ensure no duplicate IDs
+        
+        document.body.appendChild(trail);
+        
+        // Remove from DOM after animation completes (300ms)
+        setTimeout(() => {
+            trail.remove();
+        }, 300);
+    }
+
+    stop() {
+        this.running = false;
+    }
+    
+    clear() {
+        this.particles.forEach(p => p.el.remove());
+        this.particles = [];
+        this.running = false;
+        
+        // Also clear any remaining trails immediately
+        document.querySelectorAll('.trail-card').forEach(el => el.remove());
+    }
+}
+
 
 class Card {
     constructor(rank, suit, isHidden = false) {
@@ -931,6 +1082,8 @@ class Game {
         this.isSplitMode = false;
         this.splitHands = []; // Array of objects: { hand: [], bet: 0, finished: false, result: null }
         this.activeHandIndex = 0; // Which split hand is currently playing
+
+        this.solitaireEffect = new SolitaireBounce();
 
         this.ui = {
             money: document.getElementById('money-display'),
@@ -1534,6 +1687,7 @@ class Game {
     determineWinner() {
         const dScore = this.calculateScore(this.dealerHand);
         let totalWinnings = 0;
+        let playerNet = 0; // Track actual profit
         
         const hasMagnet = this.hasItem('magnet');
         const winMult = hasMagnet ? 4 : 2;
@@ -1553,9 +1707,9 @@ class Game {
             totalWinnings = r1 + r2;
 
             const totalBet = this.splitHands.reduce((acc,h) => acc + h.bet, 0);
-            const net = totalWinnings - totalBet; // net gain for player this round (can be negative)
+            const net = totalWinnings - totalBet; 
+            playerNet = net;
 
-            // If net is exactly zero, decide between PUSH and MIXED RESULT
             const net1 = r1 - this.splitHands[0].bet;
             const net2 = r2 - this.splitHands[1].bet;
 
@@ -1564,9 +1718,7 @@ class Game {
             } else if (net < 0) {
                 this.showFloatText(`-$${Math.abs(net)}`, "#table-area", "red");
             } else {
-                // net === 0
                 if (net1 === 0 && net2 === 0) {
-                    // Both hands pushed
                     this.showFloatText("PUSH", "#table-area", "#fff");
                 } else {
                     this.showFloatText("MIXED RESULT", "#table-area", "#fff");
@@ -1577,25 +1729,27 @@ class Game {
             const pScore = this.calculateScore(this.playerHand);
             const totalBet = this.currentBet;
             if (pScore > 21) {
-                // Player busted: net = -bet
                 const net = 0 - totalBet;
+                playerNet = net;
                 this.showFloatText(`-$${Math.abs(net)}`, "#player-zone", "red");
                 totalWinnings = 0;
             } else if (dScore > 21) {
                 totalWinnings = this.currentBet * winMult;
                 const net = totalWinnings - totalBet;
+                playerNet = net;
                 this.showFloatText(`+ $${net}`, "#dealer-zone", "var(--green)");
             } else if (pScore > dScore) {
                 totalWinnings = this.currentBet * winMult;
                 const net = totalWinnings - totalBet;
+                playerNet = net;
                 this.showFloatText(`+ $${net}`, "#player-zone", "var(--green)");
             } else if (pScore === dScore) {
                 totalWinnings = this.currentBet;
-                // Push -> net 0
+                playerNet = 0; // Push
                 this.showFloatText("PUSH", "#table-area", "#fff");
             } else {
-                // Player loses
                 const net = 0 - totalBet;
+                playerNet = net;
                 this.showFloatText(`-$${Math.abs(net)}`, "#table-area", "red");
                 totalWinnings = 0;
             }
@@ -1604,6 +1758,13 @@ class Game {
         if (totalWinnings > 0) {
             this.money += totalWinnings;
             this.updateMoneyUI();
+        }
+        
+        // --- TRIGGER SOLITAIRE EFFECT ON WIN ---
+        if (playerNet > 0) {
+            setTimeout(() => {
+                 this.solitaireEffect.start('btn-next');
+            }, 500);
         }
         
         if (this.money < 5) {
@@ -1615,13 +1776,16 @@ class Game {
 
     endRound(multiplier) {
         let winnings = 0;
-        
+        let playerNet = 0;
+
         if (multiplier === "push") {
             winnings = this.currentBet;
+            playerNet = 0;
         } else if (multiplier > 0) {
             let ratio = multiplier;
             if (this.hasItem('magnet')) ratio = 3;
             winnings = Math.floor(this.currentBet + (this.currentBet * ratio));
+            playerNet = winnings - this.currentBet;
         }
 
         const net = winnings - this.currentBet;
@@ -1637,6 +1801,13 @@ class Game {
         if (winnings > 0) {
             this.money += winnings;
             this.updateMoneyUI();
+        }
+        
+        // --- TRIGGER SOLITAIRE EFFECT ON WIN ---
+        if (playerNet > 0) {
+            setTimeout(() => {
+                this.solitaireEffect.start('btn-next');
+            }, 500);
         }
         
         if (this.money < 5) {
@@ -1693,6 +1864,9 @@ class Game {
     }
 
     closeShop() {
+        // --- CLEANUP SOLITAIRE EFFECT HERE ---
+        this.solitaireEffect.clear();
+        
         document.getElementById('shop-overlay').style.display = 'none';
         this.toggleControls(false);
         document.getElementById('btn-next').style.display = 'block';
