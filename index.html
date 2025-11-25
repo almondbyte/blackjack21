@@ -216,6 +216,7 @@
             border: 1px solid #999;
             transition: transform 0.4s, margin 0.3s;
             transform-style: preserve-3d;
+            overflow: hidden; /* Important for burn effect */
         }
         
         .card-front.red { color: #d00; }
@@ -246,6 +247,7 @@
             display: flex;
             flex-direction: column;
             justify-content: space-between;
+            z-index: 2; /* Keep content above burn overlay initially */
         }
 
         .card-back {
@@ -267,6 +269,72 @@
             top: 50%; left: 50%;
             transform: translate(-50%, -50%);
         }
+
+        /* --- BURN ANIMATION STYLES --- */
+        .card.burning {
+            animation: cardAsh 1.2s cubic-bezier(0.55, 0.055, 0.675, 0.19) forwards !important;
+            pointer-events: none;
+            box-shadow: none;
+            border-color: #333;
+        }
+
+        /* Fire overlay */
+        .card.burning::after {
+            content: '';
+            position: absolute;
+            bottom: -20%; left: 0; width: 100%; height: 140%;
+            background: linear-gradient(0deg, 
+                transparent 0%, 
+                rgba(255, 69, 0, 0.8) 20%, 
+                rgba(255, 215, 0, 0.6) 50%, 
+                transparent 80%
+            );
+            z-index: 10;
+            mix-blend-mode: hard-light;
+            animation: fireConsume 1.2s linear forwards;
+            filter: blur(4px);
+        }
+
+        .card.burning .card-inner {
+            /* Shake effect while burning */
+            animation: burnShake 0.1s infinite;
+        }
+
+        @keyframes cardAsh {
+            0% { 
+                filter: brightness(1) sepia(0); 
+                transform: scale(1);
+            }
+            30% {
+                filter: brightness(0.8) sepia(0.5) contrast(1.5);
+                transform: scale(1.05);
+            }
+            60% {
+                filter: brightness(0.4) sepia(1) grayscale(0.8) contrast(2);
+                transform: scale(0.95);
+                opacity: 0.9;
+            }
+            100% { 
+                filter: brightness(0) grayscale(1); 
+                transform: translateY(-80px) scale(0.8) rotate(10deg);
+                opacity: 0;
+            }
+        }
+
+        @keyframes fireConsume {
+            0% { transform: translateY(100%); opacity: 0; }
+            20% { opacity: 1; }
+            100% { transform: translateY(-100%); opacity: 0; }
+        }
+
+        @keyframes burnShake {
+            0% { margin-left: -2px; margin-top: 1px; }
+            25% { margin-left: 2px; margin-top: -1px; }
+            50% { margin-left: -1px; margin-top: -2px; }
+            75% { margin-left: 1px; margin-top: 2px; }
+            100% { margin-left: 0; margin-top: 0; }
+        }
+
 
         /* --- SOLITAIRE TRAIL STYLES --- */
         .trail-card {
@@ -845,9 +913,6 @@ const initBackground = () => {
         gl.viewport(0, 0, canvas.width, canvas.height);
         
         // FIX 2: Modulo time calculation to prevent precision loss
-        // The pattern period involves 4*PI (from sin(time*0.5)).
-        // We wrap at a large multiple of 4*PI to keep numbers small while ensuring the loop is seamless.
-        // 4 * PI * 100 = ~1256.6 seconds.
         const rawTime = (Date.now() - startTime) * 0.001;
         const wrappedTime = rawTime % (Math.PI * 400.0);
 
@@ -1125,6 +1190,22 @@ class Game {
         for(let i=0; i<30; i++) {
             this.spawnConfetti();
         }
+    }
+
+    // NEW: Burn Animation
+    triggerBurnAnim() {
+        const cards = document.querySelectorAll('.card');
+        if (cards.length === 0) return Promise.resolve();
+
+        cards.forEach((c, i) => {
+            // Stagger slightly random for chaos effect
+            setTimeout(() => {
+                c.classList.add('burning');
+            }, Math.random() * 200);
+        });
+
+        // Return promise that resolves after animation (1.2s)
+        return new Promise(resolve => setTimeout(resolve, 1200));
     }
 
     spawnConfetti() {
@@ -1609,7 +1690,7 @@ class Game {
             }
         }
 
-        this.determineWinner();
+        await this.determineWinner();
     }
 
     async doubleDown() {
@@ -1684,7 +1765,7 @@ class Game {
         this.ui.dealerScore.classList.add('visible');
     }
 
-    determineWinner() {
+    async determineWinner() {
         const dScore = this.calculateScore(this.dealerHand);
         let totalWinnings = 0;
         let playerNet = 0; // Track actual profit
@@ -1760,17 +1841,35 @@ class Game {
             this.updateMoneyUI();
         }
         
-        // --- TRIGGER SOLITAIRE EFFECT ON WIN ---
-        if (playerNet > 0) {
-            setTimeout(() => {
-                 this.solitaireEffect.start('btn-next');
-            }, 500);
-        }
-        
-        if (this.money < 5) {
-            setTimeout(() => this.triggerGameOver(), 1500);
+        // --- END OF ROUND FLOW ---
+
+        // 1. Check for Loss to trigger Burn
+        if (playerNet < 0) {
+            // BURN IT DOWN
+            await this.triggerBurnAnim();
+            
+            // Proceed to shop/gameover immediately after burn
+            if (this.money < 5) {
+                this.triggerGameOver();
+            } else {
+                this.openShop();
+            }
         } else {
-            setTimeout(() => this.openShop(), 1500);
+            // 2. Win or Push Flow (Original behavior)
+            
+            // Trigger Solitaire Effect on Win
+            if (playerNet > 0) {
+                setTimeout(() => {
+                     this.solitaireEffect.start('btn-next');
+                }, 500);
+            }
+            
+            // Wait then continue
+            if (this.money < 5) {
+                setTimeout(() => this.triggerGameOver(), 1500);
+            } else {
+                setTimeout(() => this.openShop(), 1500);
+            }
         }
     }
 
@@ -1803,17 +1902,27 @@ class Game {
             this.updateMoneyUI();
         }
         
-        // --- TRIGGER SOLITAIRE EFFECT ON WIN ---
-        if (playerNet > 0) {
-            setTimeout(() => {
-                this.solitaireEffect.start('btn-next');
-            }, 500);
-        }
-        
-        if (this.money < 5) {
-            setTimeout(() => this.triggerGameOver(), 1500);
+        // Blackjack is usually a win, but if we reuse this logic...
+        if (playerNet < 0) {
+            // This path usually not reached in current blackjack logic (instant win), 
+            // but for safety:
+             (async () => {
+                await this.triggerBurnAnim();
+                if (this.money < 5) this.triggerGameOver();
+                else this.openShop();
+             })();
         } else {
-            setTimeout(() => this.openShop(), 1500);
+            if (playerNet > 0) {
+                setTimeout(() => {
+                    this.solitaireEffect.start('btn-next');
+                }, 500);
+            }
+            
+            if (this.money < 5) {
+                setTimeout(() => this.triggerGameOver(), 1500);
+            } else {
+                setTimeout(() => this.openShop(), 1500);
+            }
         }
     }
 
@@ -1970,5 +2079,4 @@ window.addEventListener('beforeinstallprompt', (e) => {
 
 </body>
 </html>
-
 
