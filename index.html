@@ -538,6 +538,9 @@
         .chip-10 { background: radial-gradient(circle at 30% 30%, #54a0ff, #2980b9); border-color: #cceeff; }
         .chip-25 { background: radial-gradient(circle at 30% 30%, #55efc4, #00b894); border-color: #ccffee; }
         .chip-100 { background: radial-gradient(circle at 30% 30%, #333, #000); border-color: var(--gold); color: var(--gold); }
+        /* NEW CHIPS */
+        .chip-500 { background: radial-gradient(circle at 30% 30%, #9b59b6, #8e44ad); border-color: #e8daef; }
+        .chip-1000 { background: radial-gradient(circle at 30% 30%, #f39c12, #d35400); border-color: #fdebd0; }
 
         .bet-actions {
             display: flex; gap: 15px; width: 100%; justify-content: center;
@@ -743,6 +746,8 @@
                 <div class="chip chip-10" onclick="game.addChip(10, event)">10</div>
                 <div class="chip chip-25" onclick="game.addChip(25, event)">25</div>
                 <div class="chip chip-100" onclick="game.addChip(100, event)">100</div>
+                <div class="chip chip-500" onclick="game.addChip(500, event)">500</div>
+                <div class="chip chip-1000" onclick="game.addChip(1000, event)">1k</div>
             </div>
 
             <!-- Actions -->
@@ -1299,7 +1304,9 @@ class Game {
             { val: 5, selector: '.chip-5' },
             { val: 10, selector: '.chip-10' },
             { val: 25, selector: '.chip-25' },
-            { val: 100, selector: '.chip-100' }
+            { val: 100, selector: '.chip-100' },
+            { val: 500, selector: '.chip-500' },
+            { val: 1000, selector: '.chip-1000' }
         ];
 
         chipTypes.forEach((c, i) => {
@@ -2086,5 +2093,4 @@ window.addEventListener('beforeinstallprompt', (e) => {
 
 </body>
 </html>
-
 
